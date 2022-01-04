@@ -33,7 +33,7 @@ int main(int argc, const char* argv[]) {
         partitions = run_leiden(graph_ptr, -1);
     }
     std::cout << std::endl;
-
+/*
     auto& partition = partitions.front();
     std::vector<std::vector<vertex_t>> comm_to_nodes(partition.get_ccount());
     for(auto v: vertices) {
@@ -47,4 +47,5 @@ int main(int argc, const char* argv[]) {
         fout << std::endl;
     }
     fout.close();
+*/
 }
