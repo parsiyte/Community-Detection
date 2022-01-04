@@ -1,77 +1,50 @@
 
 #include <iostream>
+#include <fstream>
+#include <algorithm>    // max_element
 #include <string>
+#include <memory>
 
-#include "GraphLoader.hpp"
-#include "CommunitiesFinder.hpp"
-#include <chrono>
-
-using std::chrono::high_resolution_clock;
-#define duration_cast(x) (std::chrono::duration_cast<std::chrono::microseconds>(x).count() / 1'000'000.0f)
-
-std::string file_path;
-
-void leiden() {
-    std::cout << "LEIDEN:" << std::endl;
-    size_t phase = 0;
-    Graph curr_graph = load_graph(file_path);
-    const float res = 1 / curr_graph.get_weight();
-    uint32_t n_vertices_beg;
-    do {
-        n_vertices_beg = curr_graph.get_vcount();
-
-        LeidenAlgorithm leiden(curr_graph, res);
-        std::cout << phase << ") Nodes: " << curr_graph.get_vcount() << ", Edges: " << curr_graph.get_ecount() << ", Quality: " << leiden.quality();
-        std::cout.flush();
-
-        auto cp = high_resolution_clock::now();
-        bool any_change_occured = leiden.move_vertices();
-        std::cout << ", Moving Nodes: " << duration_cast(high_resolution_clock::now() - cp);
-        std::cout.flush();
-
-        if(!any_change_occured) break;
-        
-        // cp = high_resolution_clock::now();
-        // leiden.refine_partition();
-        // std::cout << ", Refine: " << duration_cast(high_resolution_clock::now() - cp);
-        // std::cout.flush();
-
-        cp = high_resolution_clock::now();
-        curr_graph = leiden.aggregate_communities();
-        std::cout << ", Aggregate Communities: " << duration_cast(high_resolution_clock::now() - cp) << std::endl;
-        phase++;
-    } while(curr_graph.get_vcount() < n_vertices_beg);
-    std::cout << std::endl;
-}
-
-void louvain() {
-    std::cout << "LOUVAIN:" << std::endl;
-    size_t phase = 0;
-    Graph curr_graph = load_graph(file_path);
-    while(true) {
-        LouvainAlgorithm louvain(curr_graph);
-        std::cout << phase << ") Nodes: " << curr_graph.get_vcount() << ", Edges: " << curr_graph.get_ecount() << ", Quality: " << louvain.quality();
-        std::cout.flush();
-
-        auto cp = high_resolution_clock::now();
-        bool any_change_occured = louvain.move_vertices();
-        std::cout << ", Moving Nodes: " << duration_cast(high_resolution_clock::now() - cp);
-        std::cout.flush();
-
-        if(!any_change_occured) break;
-
-        cp = high_resolution_clock::now();
-        curr_graph = louvain.aggregate_communities();
-        std::cout << ", Aggregate Communities: " << duration_cast(high_resolution_clock::now() - cp) << std::endl;
-        phase++;
-    }
-    std::cout << std::endl;
-}
+#include "types.hpp"
+#include "graph_loader.hpp"
+#include "communities_finders.hpp"
 
 int main(int argc, const char* argv[]) {
-    file_path = std::string(argv[2]);
-    if(std::string(argv[1]) == "louvain")
-        louvain();
-    else if(std::string(argv[1]) == "leiden")
-        leiden();
+    std::vector<edge_t> edges = load_edges(std::string(argv[2]));
+    std::vector<vertex_t> vertices = get_vertices(edges);
+    size_t n_vertices = *std::max_element(vertices.begin(), vertices.end()) + 1;
+    std::vector<vertex_t> renumbered_vertices(n_vertices);
+    vertex_t vertex = 0;
+    for(auto v: vertices) renumbered_vertices[v] = vertex++;
+
+    Graph::Builder builder;
+    for(auto [v1, v2, _]: edges) {
+        v1 = renumbered_vertices[v1]; v2 = renumbered_vertices[v2];
+        builder.insert(v1, v2); builder.insert(v2, v1);
+    }
+    std::shared_ptr<const Graph> graph_ptr(builder.build());
+    edges.clear();
+
+    std::vector<Partition> partitions;
+    if(std::string(argv[1]) == "louvain") {
+        partitions = run_louvain(graph_ptr, -1);
+    }
+    else if(std::string(argv[1]) == "leiden") {
+        partitions = run_leiden(graph_ptr, -1);
+    }
+    std::cout << std::endl;
+
+    auto& partition = partitions.front();
+    std::vector<std::vector<vertex_t>> comm_to_nodes(partition.get_ccount());
+    for(auto v: vertices) {
+        comm_to_nodes[partition.get_comm(renumbered_vertices[v])].push_back(v);
+    }
+    std::ofstream fout;
+    fout.open("comms.txt", std::fstream::out);
+    for(auto& vertices: comm_to_nodes){
+        if(vertices.size() == 0) continue;
+        for(auto v: vertices) fout << v << " ";
+        fout << std::endl;
+    }
+    fout.close();
 }

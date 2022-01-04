@@ -1,5 +1,9 @@
 #ifndef MODULARITY_HPP
 #define MODULARITY_HPP
+
+#include <vector>
+
+#include "types.hpp"
 #include "Partition.hpp"
 
 class Modularity {
@@ -10,17 +14,16 @@ public:
         p: The partition
         k_i_ins: The weights from the vector to the all community defined in the partition
     */    
-    static uint32_t find_best_community(uint32_t v, const Partition& p, const std::vector<float>& k_i_ins);
+    static vertex_t find_best_community(vertex_t v, const Partition& p, const std::vector<float>& k_i_ins);
 
     static float quality(const Partition& p) noexcept {
-        const float _2m = p.get_graph().get_weight();
+        const float _2m = p.get_graph_ptr()->get_weight();
         double q = 0.;
-        for (int c = 0; c < p.get_ccount(); c++) {
+        for (community_t c = 0; c < p.get_ccount(); c++) {
             if (p.get_comm_weight(c) > 0) {
                 q += p.get_comm_inner_weight(c) / _2m - (p.get_comm_weight(c) / _2m) * (p.get_comm_weight(c) / _2m);
             }
         }
-
         return q;
     }
 
