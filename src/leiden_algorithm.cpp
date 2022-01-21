@@ -74,9 +74,8 @@ void refine_partition(Partition& partition) {
     std::vector<float> ref_comm_to_comm_w(graph_ptr->get_vcount());
     for(vertex_t v = 0; v < graph_ptr->get_vcount(); v++) {
         for(auto [u, w]: graph_ptr->adjecencies(v)) {
-            if(partition.get_comm(v) != partition.get_comm(u)) {
-                ref_comm_to_comm_w[refined_partition.get_comm(u)] += w;
-            }
+            if(partition.get_comm(v) != partition.get_comm(u)) continue;
+            ref_comm_to_comm_w[refined_partition.get_comm(v)] += w;
         }
     }
 
@@ -86,7 +85,7 @@ void refine_partition(Partition& partition) {
         if(refined_partition.get_comm_size(v_ref_comm) > 1) continue;
 
         float comm_weight = partition.get_comm_weight(partition.get_comm(v));
-        if(ref_comm_to_comm_w[v_ref_comm] < refined_partition.get_comm_weight(v_ref_comm) * (comm_weight - refined_partition.get_comm_weight(v_ref_comm)) / graph_ptr->get_weight()) continue;
+        if(ref_comm_to_comm_w[v_ref_comm] < graph_ptr->get_weight(v) * (comm_weight - graph_ptr->get_weight(v)) / graph_ptr->get_weight()) continue;
         ref_comm_to_comm_w[v_ref_comm] = 0;
 
         std::vector<community_t> target_ref_comms;
