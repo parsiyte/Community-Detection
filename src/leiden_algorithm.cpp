@@ -79,8 +79,12 @@ void refine_partition(Partition& partition) {
         }
     }
 
+    std::vector<vertex_t> vertices(graph_ptr->get_vcount());
+    std::iota(vertices.begin(), vertices.end(), 0);
+    std::shuffle(vertices.begin(), vertices.end(), RANDOM_ENGINE);
+
     std::vector<float> k_i_ins(refined_partition.get_ccount());
-    for(vertex_t v = 0; v < graph_ptr->get_vcount(); v++) {
+    for(vertex_t v: vertices) {
         community_t v_ref_comm = refined_partition.get_comm(v);
         if(refined_partition.get_comm_size(v_ref_comm) > 1) continue;
 
@@ -130,31 +134,8 @@ void refine_partition(Partition& partition) {
             k_i_ins[refined_partition.get_comm(u)] = 0;
         }
     }
-    
-    std::vector<std::vector<vertex_t>> comm_to_nodes(partition.get_ccount());
-    for(vertex_t v = 0; v < graph_ptr->get_vcount(); v++) {
-        comm_to_nodes[partition.get_comm(v)].push_back(v);
-    }
-    
-    std::vector<community_t> merged_comms(graph_ptr->get_vcount());
-    for(const auto& vertices: comm_to_nodes) {
-        community_t merging_comm = 0;
-        bool comm_merge_enabled = false;
-        for(auto v: vertices) {
-            community_t ref_comm = refined_partition.get_comm(v);
-            merged_comms[v] = ref_comm;
-            if(refined_partition.get_comm_size(ref_comm) == 1) {
-                if(comm_merge_enabled) {
-                    merged_comms[v] = merging_comm;
-                } else {
-                    merging_comm = ref_comm;
-                    comm_merge_enabled = true;
-                }
-            }
-        }
-    }
 
-    partition = Partition(graph_ptr, std::move(merged_comms));
+    partition = std::move(refined_partition);
 }
 
 void run(std::vector<Partition>& hierarchy, std::shared_ptr<const Graph> graph_ptr, std::vector<community_t> initial_vertex_comms, int max_level) {
