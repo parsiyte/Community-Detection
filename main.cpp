@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <fstream>
 #include <algorithm>    // max_element
@@ -8,6 +7,7 @@
 #include "types.hpp"
 #include "graph_loader.hpp"
 #include "communities_finders.hpp"
+#include "comms_writer.hpp"
 
 int main(int argc, const char* argv[]) {
     std::vector<edge_t> edges = load_edges(std::string(argv[2]));
@@ -33,19 +33,5 @@ int main(int argc, const char* argv[]) {
         partitions = run_leiden(graph_ptr, -1);
     }
     std::cout << std::endl;
-/*
-    auto& partition = partitions.front();
-    std::vector<std::vector<vertex_t>> comm_to_nodes(partition.get_ccount());
-    for(auto v: vertices) {
-        comm_to_nodes[partition.get_comm(renumbered_vertices[v])].push_back(v);
-    }
-    std::ofstream fout;
-    fout.open("comms.txt", std::fstream::out);
-    for(auto& vertices: comm_to_nodes){
-        if(vertices.size() == 0) continue;
-        for(auto v: vertices) fout << v << " ";
-        fout << std::endl;
-    }
-    fout.close();
-*/
+
 }
