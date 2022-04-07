@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>           // shared_ptr
+#include <mutex>
 
 #include "utils.hpp"
 #include "Graph.hpp"
@@ -12,13 +13,14 @@ class Partition {
     std::shared_ptr<const Graph> graph_ptr;
     std::vector<community_t> vertex_comms;
     std::vector<size_t> comm_sizes;
+    std::vector<std::mutex> comm_locks;
     std::vector<float> comm_weights; // the sum of the weights of the edges incident to vertices in the community
     std::vector<float> comm_inner_weights; // the sum of the weights of the edges inside the community
 public:
     Partition(std::shared_ptr<const Graph> graph_ptr, std::vector<community_t> vertex_comms);
     Partition(std::shared_ptr<const Graph> graph_ptr) : Partition(graph_ptr, fill_with_communities(graph_ptr->get_vcount())) {};
     
-    void change_comm(vertex_t v, community_t c, float old_k_i_in, float new_k_i_in);
+    void change_comm(vertex_t v, community_t c, float old_k_i_in, float new_k_i_in, bool thread_safe=false);
     void renumber() noexcept;
 
     size_t get_ccount() const noexcept { return n_comms; }

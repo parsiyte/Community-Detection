@@ -13,6 +13,8 @@ Partition::Partition(std::shared_ptr<const Graph> graph_ptr, std::vector<communi
     comm_sizes.resize(n_comms);
     comm_weights.resize(n_comms);
     comm_inner_weights.resize(n_comms);
+    comm_locks = std::vector<std::mutex>(n_comms);
+
     for(vertex_t v = 0; v < graph_ptr->get_vcount(); v++) {
         community_t comm = vertex_comms[v];
         comm_sizes[comm]++;
@@ -22,17 +24,22 @@ Partition::Partition(std::shared_ptr<const Graph> graph_ptr, std::vector<communi
     this->vertex_comms = std::move(vertex_comms);
 }
 
-void Partition::change_comm(vertex_t v, community_t c, float old_k_i_in, float new_k_i_in) {      
+void Partition::change_comm(vertex_t v, community_t c, float old_k_i_in, float new_k_i_in, bool thread_safe) {      
     /* Remove from its old community*/
     community_t old_c = vertex_comms[v];
+    if(thread_safe) comm_locks[old_c].lock();
     comm_sizes[old_c]--;
     comm_weights[old_c] -= graph_ptr->get_weight(v);
     comm_inner_weights[old_c] -= 2 * old_k_i_in + graph_ptr->get_self_weight(v);
-    
+    if(thread_safe) comm_locks[old_c].unlock();
+
     /* Insert to its new community */
+    if(thread_safe) comm_locks[c].lock();
     comm_sizes[c]++;
     comm_weights[c] += graph_ptr->get_weight(v);
     comm_inner_weights[c] += 2 * new_k_i_in + graph_ptr->get_self_weight(v);
+    if(thread_safe) comm_locks[c].unlock();
+    
     vertex_comms[v] = c;
 }
 
@@ -55,10 +62,12 @@ void Partition::renumber() noexcept {
         new_comm_weights[c] = comm_weights[old_comm];
         new_comm_inner_weights[c] = comm_inner_weights[old_comm];
     }
+    
+    n_comms = non_empty_comms.size();
     comm_sizes = std::move(new_comm_sizes);
     comm_weights = std::move(new_comm_weights);
     comm_inner_weights = std::move(new_comm_inner_weights);
-    n_comms = non_empty_comms.size();
+    comm_locks = std::vector<std::mutex>(n_comms);    
     
     for(vertex_t v = 0; v < graph_ptr->get_vcount(); v++) {
         vertex_comms[v] = renumbered_comms[vertex_comms[v]];

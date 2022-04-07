@@ -2,6 +2,7 @@
 #define UTILS_HPP
 
 #include <vector>
+#include <unordered_map>
 #include <cstdlib>      // abs
 #include <chrono>
 #include <numeric>      // iota
@@ -18,9 +19,21 @@ inline std::vector<community_t> fill_with_communities(size_t n_comms) {
     return arr;
 }
 
-inline std::chrono::system_clock::time_point get_time() { return  std::chrono::high_resolution_clock::now(); }
-inline double get_elapsed_time(std::chrono::system_clock::time_point last_check_point, std::chrono::system_clock::time_point curr_check_point) {
+using time_point = std::chrono::system_clock::time_point;
+inline time_point get_time() { 
+    return  std::chrono::high_resolution_clock::now(); 
+}
+inline double get_elapsed_time(time_point last_check_point,  time_point curr_check_point) {
     return std::chrono::duration_cast<std::chrono::microseconds>(curr_check_point - last_check_point).count() / 1'000'000.0f;
 }
 
+template<typename K, typename V>
+bool contains(const std::vector<V>& vec, K key) {
+    return key < vec.size();
+}
+
+template<typename K, typename V>
+bool contains(const std::unordered_map<K, V>& map, K key) {
+    return map.find(key) != map.end();
+}
 #endif

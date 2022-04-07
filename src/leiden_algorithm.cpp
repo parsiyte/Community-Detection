@@ -46,7 +46,7 @@ bool move_vertices(Partition& partition) {
         }
 
         community_t initial_community = partition.get_comm(v);
-        community_t best_community = Modularity::find_best_community(v ,partition, k_i_ins);
+        community_t best_community = Modularity::find_best_community(v, partition, k_i_ins);
         
         if (initial_community != best_community) {
             partition.change_comm(v, best_community, k_i_ins[initial_community], k_i_ins[best_community]);

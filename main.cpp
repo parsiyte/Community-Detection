@@ -7,7 +7,6 @@
 #include "types.hpp"
 #include "graph_loader.hpp"
 #include "communities_finders.hpp"
-#include "comms_writer.hpp"
 
 int main(int argc, const char* argv[]) {
     std::vector<edge_t> edges = load_edges(std::string(argv[2]));
@@ -32,6 +31,8 @@ int main(int argc, const char* argv[]) {
     else if(std::string(argv[1]) == "leiden") {
         partitions = run_leiden(graph_ptr, -1);
     }
+    else if(std::string(argv[1]) == "pleiden") {
+        partitions = run_parallel_leiden(graph_ptr, -1);
+    }
     std::cout << std::endl;
-
 }

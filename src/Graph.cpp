@@ -48,5 +48,17 @@ Graph* Graph::Builder::build() {
     }
     edges.clear();
     
+    // for (int k = 1; k < graph->rowptr.size(); k++) {
+    //     for(int i = graph->rowptr[k - 1] + 1; i < graph->rowptr[k]; i++) {
+    //         for(int j = i; j >  graph->rowptr[k - 1]; j--) {
+    //             if(graph->col[j-1].first > graph->col[j].first) {
+    //                 auto temp = graph->col[j];
+    //                 graph->col[j] = graph->col[j-1];
+    //                 graph->col[j-1] = temp;
+    //             }
+    //         }
+    //     }
+    // }
+    
     return graph;
 }
